@@ -22,15 +22,18 @@ on:
           - mongo
 
 env:
-  GKE_PROJECT: ${{ secrets.GKE_PROJECT }}
-  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
-  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  GKE_CLUSTER: codigo-rafael
+  GKE_ZONE: us-central1
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   NAMESPACE: backend-namespace
 
 jobs:
   change-driver:
     name: Cambiar Driver a ${{ github.event.inputs.driver }}
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     
     steps:
     - name: Checkout código
@@ -39,29 +42,27 @@ jobs:
     - name: Autenticación en Google Cloud
       uses: google-github-actions/auth@v2
       with:
-        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        workload_identity_provider: projects/762c7709-7568-49f1-b91/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+        service_account: github-actions@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
 
     - name: Configurar gcloud CLI
       uses: google-github-actions/setup-gcloud@v2
 
     - name: Obtener credenciales de GKE
-      uses: google-github-actions/get-gke-credentials@v2
-      with:
-        cluster_name: ${{ env.GKE_CLUSTER }}
-        location: ${{ env.GKE_ZONE }}
-        project_id: ${{ env.GKE_PROJECT }}
+      run: |
+        gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} --zone ${{ env.GKE_ZONE }} --project ${{ env.PROJECT_ID }}
 
     - name: Mostrar estado actual
       run: |
         echo "============================================"
         echo "Estado actual del ConfigMap"
         echo "============================================"
-        kubectl get configmap backend-config -n ${{ env.NAMESPACE }} -o yaml | grep -A5 "data:"
+        kubectl get configmap backend-config -n ${{ env.NAMESPACE }} -o yaml | grep -A5 "data:" || echo "ConfigMap no encontrado"
         echo ""
         echo "============================================"
         echo "Pods actuales del backend"
         echo "============================================"
-        kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend || echo "No hay pods del backend"
 
     - name: Configurar variables según driver
       id: config
@@ -126,8 +127,10 @@ jobs:
         
         echo ""
         echo "Variables de entorno del backend:"
-        POD=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend -o jsonpath='{.items[0].metadata.name}')
-        kubectl exec $POD -n ${{ env.NAMESPACE }} -- env | grep -E "MY_DATABASE_DRIVER|DB_HOST|DB_PORT" || true
+        POD=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null) || true
+        if [ -n "$POD" ]; then
+          kubectl exec $POD -n ${{ env.NAMESPACE }} -- env | grep -E "MY_DATABASE_DRIVER|DB_HOST|DB_PORT" || true
+        fi
 
     - name: Resumen
       run: |
