@@ -68,15 +68,19 @@ jobs:
         kubectl apply -f deployment.yaml
         kubectl apply -f service.yaml
         kubectl apply -f cronjob.yaml
+        kubectl apply -f pvc-postgres.yaml
+        kubectl apply -f configmap-postgres.yaml
         kubectl apply -f deployment-postgres.yaml
         kubectl apply -f service-postgres.yaml
         kubectl apply -f pvc-mysql.yaml
         kubectl apply -f configmap-mysql.yaml
         kubectl apply -f deployment-mysql.yaml
         kubectl apply -f service-mysql.yaml
+        kubectl apply -f pvc-mongo.yaml
+        kubectl apply -f configmap-mongo.yaml
         kubectl apply -f deployment-mongo.yaml
         kubectl apply -f service-mongo.yaml
         # Esperar a que las bases de datos estén listas
-        kubectl wait --for=condition=ready pod -l app=postgres -n backend-namespace --timeout=120s
-        kubectl wait --for=condition=ready pod -l app=mysql -n backend-namespace --timeout=120s
-        kubectl wait --for=condition=ready pod -l app=mongo -n backend-namespace --timeout=120s
+        kubectl wait --for=condition=ready pod -l app=postgres -n backend-namespace --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=mysql -n backend-namespace --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=mongo -n backend-namespace --timeout=300s
