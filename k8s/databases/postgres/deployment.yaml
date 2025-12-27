@@ -47,7 +47,6 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: postgres-init
           mountPath: /docker-entrypoint-initdb.d/
-        # Readiness probe simplificado
         readinessProbe:
           tcpSocket:
             port: 5432
@@ -56,7 +55,6 @@ spec:
           timeoutSeconds: 3
           successThreshold: 1
           failureThreshold: 6
-        # Liveness probe simplificado
         livenessProbe:
           tcpSocket:
             port: 5432
@@ -64,13 +62,14 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
+        # RECURSOS MÍNIMOS para cluster pequeño
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "250m"
+            memory: "64Mi"
+            cpu: "50m"
           limits:
-            memory: "512Mi"
-            cpu: "500m"
+            memory: "256Mi"
+            cpu: "200m"
       volumes:
       - name: postgres-storage
         emptyDir: {}
