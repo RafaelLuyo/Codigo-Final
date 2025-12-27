@@ -23,21 +23,29 @@ spec:
         app.kubernetes.io/name: backend
         app.kubernetes.io/component: api
     spec:
-      # InitContainer para esperar que la DB esté lista
+      # InitContainer para esperar que la DB esté lista (funciona con cualquier driver)
       initContainers:
       - name: wait-for-db
-        image: postgres:13-alpine
+        image: busybox:1.36
         command: 
         - sh
         - -c
         - |
           echo "Esperando a que la base de datos esté lista..."
-          until pg_isready -h $DB_HOST -p $DB_PORT; do
-            echo "Base de datos no disponible, esperando..."
+          echo "Driver: $MY_DATABASE_DRIVER"
+          echo "Host: $DB_HOST"
+          echo "Puerto: $DB_PORT"
+          until nc -z $DB_HOST $DB_PORT; do
+            echo "Base de datos no disponible en $DB_HOST:$DB_PORT, esperando..."
             sleep 2
           done
           echo "Base de datos lista!"
         env:
+        - name: MY_DATABASE_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: MY_DATABASE_DRIVER
         - name: DB_HOST
           valueFrom:
             configMapKeyRef:
