@@ -4,7 +4,7 @@ set -e
 # ============================================
 # Script de Backup para MySQL, PostgreSQL, MongoDB
 # Sube backups a AWS S3: bucket-codigo-backup
-# Subcarpeta: luyo-alumno/database/YYYYMMDDHHMMSS/
+# Subcarpeta: luyo-rafael/database/YYYYMMDDHHMMSS/
 # ============================================
 
 # Variables de entorno (se pasan desde el CronJob)
