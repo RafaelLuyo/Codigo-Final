@@ -136,4 +136,4 @@ rm -f "/tmp/${BACKUP_FILE}"
 echo "=========================================="
 echo "Backup completado exitosamente!"
 echo "Archivo: s3://${AWS_BUCKET}/${BACKUP_DIR}/${BACKUP_FILE}"
-echo "=========================================="
+echo "=========================================="# updated
