@@ -30,6 +30,34 @@ spec:
         volumeMounts:
         - name: mysql-storage
           mountPath: /var/lib/mysql
+        - name: mysql-init
+          mountPath: /docker-entrypoint-initdb.d/
+        readinessProbe:
+          exec:
+            command:
+              - mysqladmin
+              - ping
+              - -h
+              - localhost
+              - -u
+              - root
+              - -prootpassword
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
       volumes:
       - name: mysql-storage
-        emptyDir: {}
+        persistentVolumeClaim:
+          claimName: mysql-pvc
+      - name: mysql-init
+        configMap:
+          name: mysql-init-config
