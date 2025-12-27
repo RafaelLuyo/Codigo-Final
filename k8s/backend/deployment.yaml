@@ -1,0 +1,132 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+  namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2  # Mínimo 2 pods requerido
+  selector:
+    matchLabels:
+      app: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/component: api
+    spec:
+      # InitContainer para esperar que la DB esté lista
+      initContainers:
+      - name: wait-for-db
+        image: postgres:13-alpine
+        command: 
+        - sh
+        - -c
+        - |
+          echo "Esperando a que la base de datos esté lista..."
+          until pg_isready -h $DB_HOST -p $DB_PORT -U $DB_USER_NAME; do
+            echo "Base de datos no disponible, esperando..."
+            sleep 2
+          done
+          echo "Base de datos lista!"
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_HOST
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_PORT
+        - name: DB_USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_USER_NAME
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_PASSWORD
+      containers:
+      - name: backend
+        image: docker.io/rafaelmao/node-codigo-rafael:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        # Variables de entorno desde ConfigMap
+        env:
+        - name: MY_DATABASE_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: MY_DATABASE_DRIVER
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_HOST
+        - name: DB_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_NAME
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DB_PORT
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: NODE_ENV
+        # Variables de entorno desde Secret
+        - name: DB_USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_USER_NAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: DB_PASSWORD
+        # Health checks
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        # Resource limits
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"

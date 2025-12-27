@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongo-init-config
+  namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: mongo
+    app.kubernetes.io/component: database
+data:
+  init.js: |
+    // Crear base de datos y colección
+    db = db.getSiblingDB('database');
+    
+    // Crear colección usuarios si no existe
+    db.createCollection('usuarios');
+    
+    // Insertar documento de ejemplo
+    db.usuarios.insertOne({
+        nombre: 'Carlos',
+        apellido: 'Ramirez',
+        edad: 35,
+        sexo: 'M'
+    });

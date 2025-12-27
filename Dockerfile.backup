@@ -1,12 +1,25 @@
-FROM amazonlinux:2
+# Imagen base con AWS CLI
+FROM amazon/aws-cli:latest
 
-# Instalar AWS CLI
+# Instalar herramientas de backup para cada base de datos
 RUN yum update -y && \
-    yum install -y awscli mysql postgresql mongodb-tools && \
+    yum install -y \
+        postgresql15 \
+        mysql \
+        tar \
+        gzip \
+    && yum clean all
+
+# Instalar MongoDB Tools (mongodump)
+RUN curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-amazon2-x86_64-100.9.4.rpm -o mongodb-tools.rpm && \
+    yum install -y mongodb-tools.rpm && \
+    rm mongodb-tools.rpm && \
     yum clean all
 
 # Copiar el script de backup
 COPY backup-script.sh /backup-script.sh
 RUN chmod +x /backup-script.sh
 
+# Punto de entrada
+ENTRYPOINT ["/bin/bash"]
 CMD ["/backup-script.sh"]

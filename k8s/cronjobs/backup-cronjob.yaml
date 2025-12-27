@@ -3,16 +3,34 @@ kind: CronJob
 metadata:
   name: backup-cronjob
   namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: backup
+    app.kubernetes.io/component: cronjob
 spec:
-  schedule: "0 */3 * * *"  # Cada 3 horas
+  # Ejecutar cada 3 horas: minuto 0 de cada 3ra hora
+  schedule: "0 */3 * * *"
+  # Mantener historial de jobs
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  # Política de concurrencia
+  concurrencyPolicy: Forbid
   jobTemplate:
     spec:
+      # TTL para limpiar jobs completados después de 1 hora
+      ttlSecondsAfterFinished: 3600
       template:
+        metadata:
+          labels:
+            app: backup
+            app.kubernetes.io/name: backup
         spec:
+          restartPolicy: OnFailure
           containers:
           - name: backup
             image: docker.io/rafaelmao/backup:latest
+            imagePullPolicy: Always
             env:
+            # Variables desde ConfigMap
             - name: MY_DATABASE_DRIVER
               valueFrom:
                 configMapKeyRef:
@@ -33,6 +51,7 @@ spec:
                 configMapKeyRef:
                   name: backend-config
                   key: DB_PORT
+            # Variables desde Secret de DB
             - name: DB_USER_NAME
               valueFrom:
                 secretKeyRef:
@@ -43,6 +62,7 @@ spec:
                 secretKeyRef:
                   name: backend-secret
                   key: DB_PASSWORD
+            # Variables desde Secret de AWS
             - name: AWS_ACCESS_KEY_ID
               valueFrom:
                 secretKeyRef:
@@ -53,4 +73,15 @@ spec:
                 secretKeyRef:
                   name: aws-secret
                   key: AWS_SECRET_ACCESS_KEY
-          restartPolicy: OnFailure
+            - name: AWS_DEFAULT_REGION
+              valueFrom:
+                secretKeyRef:
+                  name: aws-secret
+                  key: AWS_DEFAULT_REGION
+            resources:
+              requests:
+                memory: "128Mi"
+                cpu: "100m"
+              limits:
+                memory: "256Mi"
+                cpu: "500m"

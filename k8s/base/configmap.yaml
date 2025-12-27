@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/component: config
+data:
+  # Driver de base de datos: mysql, postgres, o mongo
+  MY_DATABASE_DRIVER: "postgres"
+  # Host del servicio de base de datos en K8s
+  DB_HOST: "postgres-service"
+  # Nombre de la base de datos
+  DB_NAME: "database"
+  # Puerto de la base de datos
+  DB_PORT: "5432"
+  # Configuración de Node.js
+  NODE_ENV: "production"

@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-config
+  namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: postgres
+    app.kubernetes.io/component: database
+data:
+  init.sql: |
+    -- Crear tabla de usuarios
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nombre VARCHAR(50) NOT NULL,
+        apellido VARCHAR(50) NOT NULL,
+        edad INT,
+        sexo CHAR(1)
+    );
+
+    -- Insertar datos de ejemplo
+    INSERT INTO usuarios (nombre, apellido, edad, sexo) 
+    VALUES ('Carlos', 'Ramirez', 35, 'M')
+    ON CONFLICT DO NOTHING;

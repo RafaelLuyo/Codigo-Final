@@ -3,11 +3,15 @@ kind: Service
 metadata:
   name: mysql-service
   namespace: backend-namespace
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/component: database
 spec:
+  type: ClusterIP
   selector:
     app: mysql
   ports:
-  - protocol: TCP
+  - name: mysql
+    protocol: TCP
     port: 3306
     targetPort: 3306
-  type: ClusterIP
