@@ -3,13 +3,14 @@ FROM amazon/aws-cli:latest
 
 # Instalar herramientas de backup para cada base de datos
 # En Amazon Linux 2023: mysql-client es mariadb105, postgresql15 está disponible
+# Cache bust: v2
 RUN yum update -y && \
     yum install -y \
     postgresql15 \
     mariadb105 \
     tar \
-    gzip \
-    && yum clean all
+    gzip && \
+    yum clean all
 
 # Instalar MongoDB Tools (mongodump)
 RUN curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-amazon2023-x86_64-100.9.4.rpm -o mongodb-tools.rpm && \
