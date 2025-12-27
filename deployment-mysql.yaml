@@ -56,8 +56,7 @@ spec:
             cpu: "500m"
       volumes:
       - name: mysql-storage
-        persistentVolumeClaim:
-          claimName: mysql-pvc
+        emptyDir: {}
       - name: mysql-init
         configMap:
           name: mysql-init-config

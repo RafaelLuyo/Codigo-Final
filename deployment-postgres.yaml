@@ -52,8 +52,7 @@ spec:
             cpu: "500m"
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        emptyDir: {}
       - name: postgres-init
         configMap:
           name: postgres-init-config
