@@ -1,0 +1,140 @@
+name: Cambiar Driver de Base de Datos
+
+on:
+  workflow_dispatch:
+    inputs:
+      resource:
+        description: 'Recurso de Kubernetes a modificar'
+        required: true
+        default: 'backend'
+        type: choice
+        options:
+          - backend
+          - configmap
+      driver:
+        description: 'Driver de base de datos'
+        required: true
+        default: 'postgres'
+        type: choice
+        options:
+          - mysql
+          - postgres
+          - mongo
+
+env:
+  GKE_PROJECT: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: ${{ secrets.GKE_CLUSTER }}
+  GKE_ZONE: ${{ secrets.GKE_ZONE }}
+  NAMESPACE: backend-namespace
+
+jobs:
+  change-driver:
+    name: Cambiar Driver a ${{ github.event.inputs.driver }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v4
+
+    - name: Autenticación en Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Configurar gcloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Obtener credenciales de GKE
+      uses: google-github-actions/get-gke-credentials@v2
+      with:
+        cluster_name: ${{ env.GKE_CLUSTER }}
+        location: ${{ env.GKE_ZONE }}
+        project_id: ${{ env.GKE_PROJECT }}
+
+    - name: Mostrar estado actual
+      run: |
+        echo "============================================"
+        echo "Estado actual del ConfigMap"
+        echo "============================================"
+        kubectl get configmap backend-config -n ${{ env.NAMESPACE }} -o yaml | grep -A5 "data:"
+        echo ""
+        echo "============================================"
+        echo "Pods actuales del backend"
+        echo "============================================"
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend
+
+    - name: Configurar variables según driver
+      id: config
+      run: |
+        DRIVER="${{ github.event.inputs.driver }}"
+        
+        case $DRIVER in
+          mysql)
+            echo "DB_HOST=mysql-service" >> $GITHUB_OUTPUT
+            echo "DB_PORT=3306" >> $GITHUB_OUTPUT
+            ;;
+          postgres)
+            echo "DB_HOST=postgres-service" >> $GITHUB_OUTPUT
+            echo "DB_PORT=5432" >> $GITHUB_OUTPUT
+            ;;
+          mongo)
+            echo "DB_HOST=mongo-service" >> $GITHUB_OUTPUT
+            echo "DB_PORT=27017" >> $GITHUB_OUTPUT
+            ;;
+        esac
+        
+        echo "DRIVER=$DRIVER" >> $GITHUB_OUTPUT
+
+    - name: Actualizar ConfigMap
+      run: |
+        echo "============================================"
+        echo "Actualizando ConfigMap con driver: ${{ steps.config.outputs.DRIVER }}"
+        echo "============================================"
+        
+        kubectl patch configmap backend-config -n ${{ env.NAMESPACE }} --type merge -p '{
+          "data": {
+            "MY_DATABASE_DRIVER": "${{ steps.config.outputs.DRIVER }}",
+            "DB_HOST": "${{ steps.config.outputs.DB_HOST }}",
+            "DB_PORT": "${{ steps.config.outputs.DB_PORT }}"
+          }
+        }'
+
+    - name: Reiniciar pods del backend
+      if: github.event.inputs.resource == 'backend'
+      run: |
+        echo "============================================"
+        echo "Reiniciando deployment del backend..."
+        echo "============================================"
+        
+        kubectl rollout restart deployment/backend -n ${{ env.NAMESPACE }}
+        
+        echo "Esperando que los pods estén listos..."
+        kubectl rollout status deployment/backend -n ${{ env.NAMESPACE }} --timeout=120s
+
+    - name: Verificar cambios
+      run: |
+        echo "============================================"
+        echo "Verificación post-cambio"
+        echo "============================================"
+        
+        echo "ConfigMap actualizado:"
+        kubectl get configmap backend-config -n ${{ env.NAMESPACE }} -o yaml | grep -A5 "data:"
+        
+        echo ""
+        echo "Pods del backend:"
+        kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend
+        
+        echo ""
+        echo "Variables de entorno del backend:"
+        POD=$(kubectl get pods -n ${{ env.NAMESPACE }} -l app=backend -o jsonpath='{.items[0].metadata.name}')
+        kubectl exec $POD -n ${{ env.NAMESPACE }} -- env | grep -E "MY_DATABASE_DRIVER|DB_HOST|DB_PORT" || true
+
+    - name: Resumen
+      run: |
+        echo "============================================"
+        echo "✅ CAMBIO COMPLETADO"
+        echo "============================================"
+        echo "Driver: ${{ steps.config.outputs.DRIVER }}"
+        echo "Host: ${{ steps.config.outputs.DB_HOST }}"
+        echo "Puerto: ${{ steps.config.outputs.DB_PORT }}"
+        echo "============================================"
