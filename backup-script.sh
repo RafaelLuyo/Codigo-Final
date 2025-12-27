@@ -16,8 +16,8 @@ DB_NAME="${DB_NAME}"
 DB_PORT="${DB_PORT}"
 
 # Configuración de AWS S3
-AWS_BUCKET="bucket-codigo-backup"
-SUBFOLDER="luyo-alumno/database"
+AWS_BUCKET="bucket-codigo-backup-rafael"
+SUBFOLDER="luyo-rafael/database"
 
 # Generar timestamp con formato YYYYMMDDHHMMSS
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
