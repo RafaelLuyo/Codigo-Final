@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # App Node.js Backend
+  app:
+    image: rafaelmao/node-codigo-rafael:latest
+    container_name: backend-app
+    ports:
+      - "3000:3000"
+    environment:
+      - MY_DATABASE_DRIVER=${MY_DATABASE_DRIVER:-postgres}
+      - DB_HOST=${DB_HOST:-postgres-db}
+      - DB_USER_NAME=${DB_USER_NAME:-admin}
+      - DB_PASSWORD=${DB_PASSWORD:-admin123}
+      - DB_NAME=${DB_NAME:-database}
+      - DB_PORT=${DB_PORT:-5432}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # PostgreSQL (Base de datos principal)
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: ${DB_USER_NAME:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin123}
+      POSTGRES_DB: ${DB_NAME:-database}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/postgres_data.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backup Cron (ejecuta cada 3 horas)
+  backup:
+    image: rafaelmao/backup-jenkins:latest
+    container_name: backup-cron
+    environment:
+      - MY_DATABASE_DRIVER=${MY_DATABASE_DRIVER:-postgres}
+      - DB_HOST=${DB_HOST:-postgres-db}
+      - DB_USER_NAME=${DB_USER_NAME:-admin}
+      - DB_PASSWORD=${DB_PASSWORD:-admin123}
+      - DB_NAME=${DB_NAME:-database}
+      - DB_PORT=${DB_PORT:-5432}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-us-east-1}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    # Ejecutar backup cada 3 horas usando cron dentro del contenedor
+    entrypoint: ["/bin/bash", "-c", "echo '0 */3 * * * /backup-script.sh >> /var/log/backup.log 2>&1' | crontab - && crond -f"]
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
