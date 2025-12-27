@@ -13,6 +13,13 @@ spec:
       labels:
         app: backend
     spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:13
+        command: ["sh", "-c", "until pg_isready -h postgres-service -p 5432 -U admin; do echo waiting for postgres; sleep 2; done;"]
+        env:
+        - name: PGPASSWORD
+          value: "admin123"
       containers:
       - name: backend
         image: docker.io/rafaelmao/node-codigo-rafael:latest
