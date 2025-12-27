@@ -5,6 +5,10 @@ on:
     branches:
       - develop
 
+permissions:
+  id-token: write
+  contents: read
+
 env:
   PROJECT_ID: project-762c7709-7568-49f1-b91  # Reemplaza con tu Project ID de GCP
   GKE_CLUSTER: codigo-rafael  # Reemplaza con el nombre de tu cluster GKE
