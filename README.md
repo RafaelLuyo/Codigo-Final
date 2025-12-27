@@ -38,7 +38,7 @@ Configura estos secretos en **Settings → Secrets and variables → Actions**:
 | `DOCKERHUB_TOKEN` | Token de acceso de Docker Hub |
 | `AWS_ACCESS_KEY_ID` | AWS Access Key para S3 |
 | `AWS_SECRET_ACCESS_KEY` | AWS Secret Key para S3 |
-| `AWS_DEFAULT_REGION` | Región de AWS (ej: `us-east-1`) |
+| `AWS_DEFAULT_REGION` | Región de AWS (sa-east-1) |
 
 ## Despliegue
 
