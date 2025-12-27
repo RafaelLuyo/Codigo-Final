@@ -117,7 +117,7 @@ pipeline {
                     sh """
                         # Ejecutar backup manualmente
                         docker run --rm \
-                            --network codigo_luyo-rafael_app-network \
+                            --network luyo-rafael_app-network \
                             -e MY_DATABASE_DRIVER=postgres \
                             -e DB_HOST=postgres-db \
                             -e DB_PORT=5432 \
