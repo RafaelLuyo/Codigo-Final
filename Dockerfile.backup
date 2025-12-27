@@ -1,0 +1,12 @@
+FROM amazonlinux:2
+
+# Instalar AWS CLI
+RUN yum update -y && \
+    yum install -y awscli mysql postgresql mongodb-tools && \
+    yum clean all
+
+# Copiar el script de backup
+COPY backup-script.sh /backup-script.sh
+RUN chmod +x /backup-script.sh
+
+CMD ["/backup-script.sh"]
