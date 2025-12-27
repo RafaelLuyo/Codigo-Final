@@ -47,27 +47,19 @@ spec:
           mountPath: /var/lib/postgresql/data
         - name: postgres-init
           mountPath: /docker-entrypoint-initdb.d/
+        # Readiness probe simplificado
         readinessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - admin
-            - -d
-            - database
-          initialDelaySeconds: 15
-          periodSeconds: 10
-          timeoutSeconds: 5
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
           successThreshold: 1
-          failureThreshold: 3
+          failureThreshold: 6
+        # Liveness probe simplificado
         livenessProbe:
-          exec:
-            command:
-            - pg_isready
-            - -U
-            - admin
-            - -d
-            - database
+          tcpSocket:
+            port: 5432
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -81,8 +73,7 @@ spec:
             cpu: "500m"
       volumes:
       - name: postgres-storage
-        persistentVolumeClaim:
-          claimName: postgres-pvc
+        emptyDir: {}
       - name: postgres-init
         configMap:
           name: postgres-init-config
