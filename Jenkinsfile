@@ -5,7 +5,10 @@ pipeline {
         DOCKER_IMAGE = 'rafaelmao/node-codigo-rafael'
         BACKUP_IMAGE = 'rafaelmao/backup-jenkins'
         DEPLOY_PATH = '/codigo/luyo-rafael'
-        DOCKER_CREDENTIALS = credentials('dockerhub-credentials')
+        DOCKER_CREDENTIALS = credentials('cc484cb0-e9e7-4dcf-b268-f6e38790dd8c')
+        AWS_ACCESS_KEY_ID = credentials('aws-access-key')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-secret-key')
+        AWS_DEFAULT_REGION = credentials('aws-region')
     }
     
     stages {
