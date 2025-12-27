@@ -70,7 +70,7 @@ pipeline {
                     sh """
                         # Copiar archivos necesarios
                         cp ${WORKSPACE}/docker-compose.jenkins.yml docker-compose.yml
-                        cp ${WORKSPACE}/.env.jenkins .env
+                        cp ${WORKSPACE}/env.jenkins.example .env
                         cp -r ${WORKSPACE}/data ./data 2>/dev/null || true
                         cp -r ${WORKSPACE}/script ./script 2>/dev/null || true
                         
