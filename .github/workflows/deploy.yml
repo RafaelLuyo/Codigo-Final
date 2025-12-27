@@ -1,0 +1,57 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - develop
+
+env:
+  PROJECT_ID: project-762c7709-7568-49f1-b91  # Reemplaza con tu Project ID de GCP
+  GKE_CLUSTER: codigo-rafael  # Reemplaza con el nombre de tu cluster GKE
+  GKE_ZONE: us-central1  # Reemplaza con tu zona
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        workload_identity_provider: projects/455355438110/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+        service_account: github-actions-sa@project-762c7709-7568-49f1-b91.iam.gserviceaccount.com
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+
+    - name: Get GKE credentials
+      run: gcloud container clusters get-credentials $GKE_CLUSTER --zone $GKE_ZONE --project $PROJECT_ID
+
+    - name: Build and push backend image
+      run: |
+        docker build -t docker.io/rafaelmao/node-codigo-rafael:latest .
+        docker push docker.io/rafaelmao/node-codigo-rafael:latest
+
+    - name: Build and push backup image
+      run: |
+        docker build -f Dockerfile.backup -t docker.io/rafaelmao/backup:latest .
+        docker push docker.io/rafaelmao/backup:latest
+
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f namespace.yaml
+        kubectl apply -f configmap.yaml
+        kubectl apply -f secret.yaml
+        kubectl apply -f secret-aws.yaml
+        kubectl apply -f deployment.yaml
+        kubectl apply -f service.yaml
+        kubectl apply -f cronjob.yaml
