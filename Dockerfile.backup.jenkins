@@ -1,0 +1,29 @@
+# Imagen base con AWS CLI para Jenkins backup
+FROM amazon/aws-cli:latest
+
+# Instalar herramientas de backup y cron
+RUN yum update -y && \
+    yum install -y \
+    postgresql15 \
+    mariadb105 \
+    tar \
+    gzip \
+    cronie && \
+    yum clean all
+
+# Instalar MongoDB Tools
+RUN curl -fsSL https://fastdl.mongodb.org/tools/db/mongodb-database-tools-amazon2023-x86_64-100.9.4.rpm -o mongodb-tools.rpm && \
+    yum install -y mongodb-tools.rpm && \
+    rm mongodb-tools.rpm && \
+    yum clean all
+
+# Copiar el script de backup para Jenkins
+COPY backup-script-jenkins.sh /backup-script.sh
+RUN chmod +x /backup-script.sh
+
+# Crear directorio de logs
+RUN mkdir -p /var/log && touch /var/log/backup.log
+
+# Punto de entrada
+ENTRYPOINT ["/bin/bash"]
+CMD ["/backup-script.sh"]
